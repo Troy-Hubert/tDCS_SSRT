@@ -1,0 +1,78 @@
+---
+title: "SSRT"
+output: html_document
+date: "2023-07-21"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#install.packages("splithalfr")
+library(splithalfr)
+```
+
+## Dataset
+Load the included SST dataset and inspect its documentation.
+
+```{r}
+data("ds_sst", package = "splithalfr")
+?ds_sst
+
+#look at the data
+ds_sst[1:10,]
+```
+
+Drop the first trial
+```{r}
+ds_sst <- ds_sst[ds_sst$trial > 1, ]
+
+ds_1 <- subset(ds_sst, participant  == 1)
+table(ds_1$condition)
+```
+
+## Scoring the SRT
+```{r}
+fn_score <- function(ds) {
+  # Mean SSD
+  mean_ssd <- mean(ds[ds$condition == 1, ]$ssd)
+  # Proportion of failed nogos
+  p_failed_nogo <- 1 - mean(ds[ds$condition == 1, ]$response)
+  # Go RTs
+  go_rts <- ds[
+    ds$condition == 0 &
+      ds$rt > 0,
+    ]$rt
+  # n-th percentile of Go RTs
+  rt_quantile <- quantile(go_rts, p_failed_nogo, names = FALSE)
+  # SSRTi
+  return(rt_quantile - mean_ssd)
+}
+```
+
+Scoring a particiapnt 
+```{r}
+fn_score(subset(ds_sst, participant == 1))
+
+```
+
+Scoring everyone
+```{r}
+scores <- by(
+  ds_sst,
+  ds_sst$participant,
+  fn_score
+)
+SSRT_DF<- data.frame(
+      participant = names(scores),
+      score = as.vector(scores)
+)
+
+SSRT_DF[1:10,]
+```
+
+
+
+
+
