@@ -6,13 +6,57 @@ date: "2023-07-22"
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+library(readxl)
+library(tidyverse)
+library(dplyr)
 ```
 
 Read in data
 ```{r}
-library(readr)
-X999Excel <- read_csv("~/Downloads/999Excel.txt")
+#read in files
+X999Excel <- read_excel("~/Downloads/999Excel.xlsx") #, col_names = TRUE)
+X999Excel <- read_excel("~/Downloads/952Excel.xlsx", col_names = TRUE)
 
+
+## Rename df headers
+head <- X999Excel[1,]
+head
+colnames(X999Excel) = head
+X999Excel <- X999Excel[-1,]
+
+view(X999Excel)
+
+df <- select(X999Excel,
+             Subject, Group, SessionDate, SessionStartDateTimeUtc, Block, Block1:Block3.Sample, 
+             DispStpRTB1.DEVICE:EmotionTask)
+
+
+view(X999Excel)
+df
+block1 <- df %>%
+  filter(!is.na(Block1))
+block2 <- df %>%
+  filter(!is.na(Block2))
+block3 <- df %>%
+  filter(!is.na(Block3))
+
+view(block1)
+
+```
+
+
+```{r}
+
+
+
+
+
+
+```
+
+
+```{r}
 library(tidyverse)
 # install.packages("rprime")
 library(rprime)
@@ -30,4 +74,5 @@ reduce_wm <- function(wm_path) {
 }
 
 ```
+
 
