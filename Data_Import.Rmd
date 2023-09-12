@@ -15,32 +15,48 @@ library(dplyr)
 Read in data
 ```{r}
 #read in files
-X999Excel <- read_excel("~/Downloads/999Excel.xlsx") #, col_names = TRUE)
-X999Excel <- read_excel("~/Downloads/952Excel.xlsx", col_names = TRUE)
+data1 <- read_excel("~/Downloads/test1.xlsx") #, col_names = TRUE)
+data2 <- read_excel("~/Downloads/test2.xlsx", col_names = TRUE)
+Excel69420 <- read_excel("~/Downloads/69420Excel.xlsx", col_names = TRUE)
 
+View(data1)
 
 ## Rename df headers
-head <- X999Excel[1,]
-head
-colnames(X999Excel) = head
-X999Excel <- X999Excel[-1,]
-
-view(X999Excel)
-
-df <- select(X999Excel,
-             Subject, Group, SessionDate, SessionStartDateTimeUtc, Block, Block1:Block3.Sample, 
-             DispStpRTB1.DEVICE:EmotionTask)
+head <- data1[1,]
+colnames(data1) = head
+data1 <- data1[-1,]
 
 
-view(X999Excel)
-df
+
+View(data1)
+
+df <- data1 %>%
+  select(
+             #overall stuff
+             Subject, Group, Block, SessionDate, SessionStartDateTimeUtc,GoCorrect:InitGoRT, PercentStop,PracticeBlock:StopCorr,Trial,BkGd,GoDur,
+             #distress/ upset sliders
+             NegDistress.Slider1.Value,NegUpset.Slider1.Value,NeuDistress.Slider1.Value,NeuUpset.Slider1.Value, PosDistress.Slider1.Value,PosUpset.Slider1.Value, 
+             #other studd?
+             CorrectAnswer, EmotionalPic,Go.ACC,Go.DurationError,Go.OnsetTime,Go.RT,Go1s.ACC,
+             #trauma 1 stuff
+             Trauma1CogAvoi1.Slider1.Value,Trauma1Deperson1.Slider1.Value,Trauma1Derealiz.Slider1.Value,
+             Trauma1Dissoc.Slider1.Value, Trauma1CogAvoi1.Slider1.Value,
+             Trauma1Distress1.Slider1.Value,Trauma1EmotAvoi.Slider1.Value
+             ) %>%
+             mutate(Go_Stop_Trial = ifelse(BkGd == "Black", "Go",
+                                    ifelse(BkGd == "Red", "Stop", NA)
+                                    ))
+
+df$`Running[Block]`
+view(df)
 block1 <- df %>%
-  filter(!is.na(Block1))
+  filter(`Running[Block]` == "Block1")
 block2 <- df %>%
-  filter(!is.na(Block2))
+  filter(`Running[Block]` == "Block2")
 block3 <- df %>%
-  filter(!is.na(Block3))
-
+  filter(`Running[Block]` == "Block3")
+Emotion <- df %>%
+  filter(`Running[Block]` == "EmotionTask")
 view(block1)
 
 ```
@@ -48,9 +64,9 @@ view(block1)
 
 ```{r}
 
-
-
-
+block1 |>
+  filter(!is.na(as.double(Go.RT))) |>
+  mean(Go.RT)
 
 
 ```
