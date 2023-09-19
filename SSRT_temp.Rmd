@@ -19,6 +19,7 @@ Load the included SST dataset and inspect its documentation.
 ```{r}
 data("ds_sst", package = "splithalfr")
 ?ds_sst
+ds_sst
 
 #look at the data
 ds_sst[1:10,]
@@ -34,7 +35,7 @@ table(ds_1$condition)
 
 ## Scoring the SRT
 ```{r}
-fn_score <- function(ds) {
+fn_score <- function(ds) { 
   # Mean SSD
   mean_ssd <- mean(ds[ds$condition == 1, ]$ssd)
   # Proportion of failed nogos
@@ -54,7 +55,6 @@ fn_score <- function(ds) {
 Scoring a particiapnt 
 ```{r}
 fn_score(subset(ds_sst, participant == 1))
-
 ```
 
 Scoring everyone
