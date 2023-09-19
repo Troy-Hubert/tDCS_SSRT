@@ -27,7 +27,6 @@ colnames(data1) = head
 data1 <- data1[-1,]
 
 
-
 View(data1)
 
 df <- data1 %>%
@@ -36,18 +35,43 @@ df <- data1 %>%
              Subject, Group, Block, SessionDate, SessionStartDateTimeUtc,GoCorrect:InitGoRT, PercentStop,PracticeBlock:StopCorr,Trial,BkGd,GoDur,
              #distress/ upset sliders
              NegDistress.Slider1.Value,NegUpset.Slider1.Value,NeuDistress.Slider1.Value,NeuUpset.Slider1.Value, PosDistress.Slider1.Value,PosUpset.Slider1.Value, 
-             #other studd?
-             CorrectAnswer, EmotionalPic,Go.ACC,Go.DurationError,Go.OnsetTime,Go.RT,Go1s.ACC,
+             #other 
+             CorrectAnswer, EmotionalPic,Go.ACC,Go.DurationError,Go.OnsetTime,Go.RT, Go1s.ACC,
              #trauma 1 stuff
              Trauma1CogAvoi1.Slider1.Value,Trauma1Deperson1.Slider1.Value,Trauma1Derealiz.Slider1.Value,
              Trauma1Dissoc.Slider1.Value, Trauma1CogAvoi1.Slider1.Value,
              Trauma1Distress1.Slider1.Value,Trauma1EmotAvoi.Slider1.Value
              ) %>%
-             mutate(Go_Stop_Trial = ifelse(BkGd == "Black", "Go",
+             mutate(
+               Subject = as.double(Subject),
+               Group = as.factor(Group),
+               Block =as.factor(Block),
+               `Running[Block]` = as.factor(`Running[Block]`),
+               Trial = factor(Trial),
+               BkGd = as.factor(BkGd),
+               Go_Stop_Trial = ifelse(BkGd == "Black", "Go",
                                     ifelse(BkGd == "Red", "Stop", NA)
-                                    ))
-
-df$`Running[Block]`
+                                      ),
+               GoDur = as.double(GoDur),
+               #CorrectAnswer = as.double(CorrectAnswer),
+               Go.ACC = as.double(Go.ACC),
+               Go1s.ACC = as.double(Go1s.ACC),
+               Go.RT = as.double(Go.RT),
+               NegDistress = as.double(NegDistress.Slider1.Value),
+               NegUpset = as.double(NegUpset.Slider1.Value),
+               NeuDistress = as.double(NeuDistress.Slider1.Value),
+               NeuUpset = as.double(NeuUpset.Slider1.Value),
+               PosDistress = as.double(PosDistress.Slider1.Value),
+               PosUpset = as.double(PosUpset.Slider1.Value),
+               CogAvoi = as.double(Trauma1CogAvoi1.Slider1.Value),
+               Deperson = as.double(Trauma1Deperson1.Slider1.Value),
+               Derealiz = as.double(Trauma1Derealiz.Slider1.Value),
+               Dissoc = as.double(Trauma1Dissoc.Slider1.Value), 
+               CogAvoi = as.double(Trauma1CogAvoi1.Slider1.Value),
+               Trauma_Distress = as.double(Trauma1Distress1.Slider1.Value),
+               Emot_Avoid = as.double(Trauma1EmotAvoi.Slider1.Value)
+               )
+               
 view(df)
 block1 <- df %>%
   filter(`Running[Block]` == "Block1")
@@ -58,37 +82,136 @@ block3 <- df %>%
 Emotion <- df %>%
   filter(`Running[Block]` == "EmotionTask")
 view(block1)
-
+view(Emotion)
+write_csv(data1, "~/Downloads/data1.csv")
 ```
 
+## KEY
+
+Regarding restructuring the data into wide format and cleaning the data, this is what we need:
+
+Participant number
+Mean Block 1 GoRT
+Block 1 Go Trials Correct
+Block 1 Stop Trials correct
+Block 1 SSRT
+Mean Block 2 GoRT
+Block 2 Go Trials Correct
+Block 2 Stop Trials correct
+Block 2 SSRT
+Mean Block 3 GoRT
+Block 3 Go Trials Correct
+Block 3 Stop Trials correct
+Block 3 SSRT
+Combined Mean Block 2 + Block 3 GoRT
+Combined Block 2 + Block 3 Go Trials Correct
+Combined Block 2 + Block 3 Stop trials correct
+Combined Block 2 + Block 3 SSRT
+Slider Value for RSDI on each image type
+
+Block Go vs Stop Trials
+Block 1 = 150 Go, 50 Stop
+Block 2 = 78 Go, 26 Stop
+Block 2 = 78 Go, 26 Stop
+
+KEY
+Subject = Participant number
+Trial Type = BkGg (Black = Go trial, Red = Stop trial)
+GoAcc = Correct Go Response (1 = correct, 0 = incorrect)
+Go.RT = Go Reaction Time 
+GoDur = Stop Signal Delay (SSD)
+Go1s.ACC = Correct Stoppage (1 = correct, 0 = incorrect)
+Block = Running[Block] (Block 1, Block 2, Block 3)
+Slider Values for negative image = NegDistress.Slider1.Value, NegUpsetSlider1.Value
+Slider Values for neutral image = NeuDistress.Slider1.Value, NeuUpsetSlider1.Value
+Slider Values for positive image = PosDistress.Slider1.Value, PosUpsetSlider1.Value
+Slider Values for trauma images = every slider value that begins with "Trauma1" or "Trauma2". There should be 11 sliders for each trauma picture
 
 ```{r}
+# Participant number
+part_num <- df[1,1]
 
-block1 |>
-  filter(!is.na(as.double(Go.RT))) |>
-  mean(Go.RT)
 
+### Block 1 ###
+# Mean Block 1 GoRT
+B1_Mean_GoRT = mean(block1$Go.RT, na.rm = TRUE)
+# Block 1 Go Trials Correct
+B1_Go_ACC = sum(block1$Go.ACC, na.rm = TRUE)
+# Block 1 Stop Trials correct
+B1_Stop_ACC = sum(block1$Go1s.ACC, na.rm = TRUE)
+# Block 1 SSRT
+B1_SSRT = "HELP"
+
+### Block 2 ###
+# Mean Block 2 GoRT
+B2_Mean_GoRT = mean(block2$Go.RT, na.rm = TRUE)
+# Block 2 Go Trials Correct
+B2_Go_ACC = sum(block2$Go.ACC, na.rm = TRUE)
+# Block 2 Stop Trials correct
+B2_Stop_ACC = sum(block2$Go1s.ACC, na.rm = TRUE)
+# Block 2 SSRT
+B2_SSRT = "ME"
+
+### Block 3 ###
+# Mean Block 3 GoRT
+B3_Mean_GoRT = mean(block3$Go.RT, na.rm = TRUE)
+# Block 3 Go Trials Correct
+B3_Go_ACC = sum(block3$Go.ACC, na.rm = TRUE)
+# Block 3 Stop Trials correct
+B3_Stop_ACC = sum(block3$Go1s.ACC, na.rm = TRUE)
+# Block 3 SSRT
+B3_SSRT = "PLEASE"
+
+### Combined Stuff
+# Combined Mean Block 2 + Block 3 GoRT
+Combined_Mean_GoRT = mean(B3_Mean_GoRT + B2_Mean_GoRT)
+# Combined Block 2 + Block 3 Go Trials Correct
+Combined_Go_ACC = mean(B2_Go_ACC + B3_Go_ACC)
+# Combined Block 2 + Block 3 Stop trials correct
+Combined_Stop_ACC = mean(B2_Stop_ACC + B3_Stop_ACC)
+# Combined Block 2 + Block 3 SSRT
+Combined_SSRT = "Colton"
+
+### Slider stuff###
+# Slider Value for RSDI on each image type
+# Trial 1
+NegDistress     = Emotion$NegDistress[1]
+NegUpset        = Emotion$NegUpset[1]
+
+# Trial 2
+NeuDistress     = Emotion$NeuDistress[2]
+NeuUpset        = Emotion$NeuUpset[2]
+
+# Trial 3
+PosDistress     = Emotion$PosDistress[3]
+PosUpset        = Emotion$PosUpset[3]
+
+#Trial 4
+Derealiz        = Emotion$Derealiz[4] 
+Dissoc          = Emotion$Dissoc[4]
+Emot_Avoid      = Emotion$Emot_Avoid[4] 
+
+# Trial 5
+CogAvoi         = Emotion$CogAvoi[5]
+Deperson        = Emotion$Deperson[5] 
+CogAvoi         = Emotion$CogAvoi[5] 
+Trauma_Distress = Emotion$Trauma_Distress[5] 
 
 ```
 
-
+## combine into one data frame (row)
 ```{r}
-library(tidyverse)
-# install.packages("rprime")
-library(rprime)
-# install.packages("wrapr")
-library(wrapr)
-# A function to prepare all eprime data simultaneously
-reduce_wm <- function(wm_path) {
-  # Read in a text file generated by Eprime
-  wm_lines <- read_eprime(wm_path)
-  # Convert lines from an Eprime file into EprimeFrame objects
-  wm_frames <- FrameList(wm_lines)
-  # Make it a data frame.
-  experiment_df <- to_data_frame(wm_frames)
-  # Select the columns we want for a tibble called "dat".
-}
-
+output_data = data.frame(
+    part_num, 
+    B1_Mean_GoRT, B1_Go_ACC, B1_Stop_ACC,B1_SSRT,
+    B2_Mean_GoRT, B2_Go_ACC, B2_Stop_ACC,B2_SSRT,
+    B3_Mean_GoRT, B3_Go_ACC, B3_Stop_ACC,B3_SSRT,
+    Combined_Mean_GoRT, Combined_Go_ACC, Combined_Stop_ACC,Combined_SSRT,
+    NegDistress, NegUpset, NeuDistress,NeuUpset, PosDistress, PosUpset, CogAvoi, Deperson, Derealiz, Dissoc, CogAvoi, Trauma_Distress, Emot_Avoid 
+)
+filename = paste0("~/Downloads/S",part_num,"_SSRT.csv")
+write.csv(output_data, filename)
 ```
+
 
 
