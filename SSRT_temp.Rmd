@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 #install.packages("splithalfr")
+
 library(splithalfr)
 ```
 
@@ -18,9 +19,10 @@ Load the included SST dataset and inspect its documentation.
 
 ```{r}
 data("ds_sst", package = "splithalfr")
-?ds_sst
+??ds_sst
 ds_sst
 
+??splithalfr
 #look at the data
 ds_sst[1:10,]
 ```
