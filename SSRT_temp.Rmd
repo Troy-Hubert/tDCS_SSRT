@@ -18,6 +18,9 @@ library(splithalfr)
 Load the included SST dataset and inspect its documentation.
 
 ```{r}
+
+
+??splithalfr
 data("ds_sst", package = "splithalfr")
 ??ds_sst
 ds_sst
@@ -72,6 +75,54 @@ SSRT_DF<- data.frame(
 )
 
 SSRT_DF[1:10,]
+```
+
+
+```{r}
+install.packages("SSRTcalc")
+
+library(SSRTcalc)
+data(adaptive)
+
+data("adaptive", package = "SSRTcalc")
+
+# new_id = ID
+# soa = SSD (ignore for go trials)
+# vol = stop(1) or go (0) trials
+#coh = percent coherent dots in teh kinematogram go task
+# RT_ex responds time in seconds
+# did the participant respond go trials trials/omitresponsein"stop"trials(1)ornot(0)?
+
+view(adaptive1)
+
+adaptive1 <- adaptive |>
+  filter(new_id == 1)
+
+sum(is.na(adaptive1$correct))
+
+integration_adaptiveSSD(
+    adaptive1,
+    stop_col='vol', 
+    ssd_col='soa',
+    rt_col='RT_exp',
+    acc_col='correct')
+integration_adaptiveSSD(
+    ds_sst_1,
+    stop_col='condition',          
+    ssd_col='ssd',
+    rt_col='rt',
+    acc_col='response')
+
+# SSRT Formula ->    
+sapply(split(df,df$ID),integration_adaptiveSSD,stop_col='STOP_COL',          ssd_col='SSD_COL',rt_col='RT_COL',acc_col='CORRECT')
+
+integration_adaptiveSSD(adaptive1,stop_col='vol', ssd_col='soa',rt_col='RT_exp',acc_col='correct')
+
+
+sapply(split(adaptive,adaptive$new_id),integration_adaptiveSSD,stop_col='vol', ssd_col='soa',rt_col='RT_exp',acc_col='correct')
+
+
+
 ```
 
 
