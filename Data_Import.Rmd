@@ -66,11 +66,7 @@ ssrt_please <- function(df){
 
 ds_sst_com
 
-data <- read_csv("~/Desktop/Coding/data/SSRT/metric10.csv")
 
-  head <- data[1,]
-  colnames(data) = head
-  data <- data[-1,]
 ```
 
 ```{r}
@@ -86,6 +82,12 @@ data <- read_csv("~/Desktop/Coding/data/SSRT/metric10.csv")
 
 ## Overarching For loop
 ```{r}
+data <- read_csv("~/Desktop/Coding/data/SSRT/metric10.csv")
+
+  head <- data[1,]
+  colnames(data) = head
+  data <- data[-1,]
+
 ds_sst <- NA
 
 
@@ -247,6 +249,8 @@ B1_Stop_ACC = sum(block1$Inhs.ACC, na.rm = TRUE)
 B1_mean_SSRT = B1_Mean_GoRT - mean(block1$ssd, na.rm = TRUE)
 #   Block 1 Failed Mean Stop RT
 B1_mean_failed_RT = mean(block1$Failed_stop_time,na.rm = TRUE)
+ # block 1 mean ssd
+B1_mean_ssd = mean(block1$ssd,na.rm = TRUE)
 
 # integration_adaptiveSSD(ds_sst_1,stop_col='condition',          ssd_col='ssd',rt_col='rt',acc_col='response')
 
@@ -261,7 +265,8 @@ B2_Stop_ACC = sum(block2$Inhs.ACC, na.rm = TRUE)
 B2_mean_SSRT = B2_Mean_GoRT - mean(block2$ssd, na.rm = TRUE)
 #   Block 3 Block 3 Failed Mean Stop RT
 B2_mean_failed_RT = mean(block2$Failed_stop_time,na.rm = TRUE)
-
+ # block 2 mean ssd
+B2_mean_ssd = mean(block2$ssd,na.rm = TRUE)
 
 
 #4. Block 3 -----------------
@@ -275,6 +280,8 @@ B3_Stop_ACC = sum(block3$Inhs.ACC, na.rm = TRUE)
 B3_mean_SSRT = B3_Mean_GoRT - mean(block3$ssd, na.rm = TRUE)
 #   Block 3 Block 3 Failed Mean Stop RT
 B3_mean_failed_RT = mean(block3$Failed_stop_time,na.rm = TRUE)
+ # block 3 mean ssd
+B3_mean_ssd = mean(block3$ssd,na.rm = TRUE)
 
 #5. Combined Stuff ----------------
 # Combined Mean Block 2 + Block 3 GoRT
@@ -287,7 +294,8 @@ Combined_Stop_ACC = sum(combined$Inhs.ACC, na.rm = TRUE)
 Combined_mean_SSRT = Combined_Mean_GoRT - mean(combined$ssd, na.rm = TRUE)
 # Combined Block 2 + Block 3 Block 3 Failed Mean Stop RT
 Combined_mean_failed_RT =mean(combined$Failed_stop_time,na.rm = TRUE)
-
+ # combined mean ssd
+Combined_mean_ssd = mean(combined$ssd,na.rm = TRUE)
 
 
 #6. Slider stuff ------------------
@@ -318,10 +326,10 @@ Trauma_Distress = Emotion$Trauma_Distress[!is.na(Emotion$Trauma_Distress)]
 
 output_data = data.frame(
     participant, 
-    B1_Mean_GoRT, B1_Go_ACC, B1_Stop_ACC, B1_mean_SSRT, B1_mean_failed_RT,
-    B2_Mean_GoRT, B2_Go_ACC, B2_Stop_ACC,B2_mean_SSRT, B2_mean_failed_RT,
-    B3_Mean_GoRT, B3_Go_ACC, B3_Stop_ACC,B3_mean_SSRT, B3_mean_failed_RT,
-    Combined_Mean_GoRT, Combined_Go_ACC, Combined_Stop_ACC,Combined_mean_SSRT, Combined_mean_failed_RT,
+    B1_Mean_GoRT, B1_Go_ACC, B1_Stop_ACC, B1_mean_SSRT, B1_mean_failed_RT, B1_mean_ssd,
+    B2_Mean_GoRT, B2_Go_ACC, B2_Stop_ACC,B2_mean_SSRT, B2_mean_failed_RT, B2_mean_ssd,
+    B3_Mean_GoRT, B3_Go_ACC, B3_Stop_ACC,B3_mean_SSRT, B3_mean_failed_RT, B3_mean_ssd,
+    Combined_Mean_GoRT, Combined_Go_ACC, Combined_Stop_ACC,Combined_mean_SSRT, Combined_mean_failed_RT, Combined_mean_ssd,
     NegDistress, NegUpset, NeuDistress,NeuUpset, PosDistress, PosUpset, CogAvoi, Deperson, Derealiz, Dissoc, 
     Trauma_Distress, Emot_Avoid 
 )
@@ -343,7 +351,7 @@ output_data = data.frame(
   
 #now that the loop is done, write 
 #write.csv(output_tab, "~/Desktop/Coding/data/SSRT_Output/Le_Holy_Grail.csv")
-  write.csv(output_tab, "~/Desktop/Coding/data/SSRT_Output/i_MEAN_its_fine.csv")
+  write.csv(output_tab, "~/Desktop/Coding/data/SSRT_Output/scary_negative_numbers.csv")
 ```
 
 ```{r}
