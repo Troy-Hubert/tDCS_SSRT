@@ -180,6 +180,319 @@ integration_adaptiveSSD <- function(df, stop_col, rt_col, acc_col, ssd_col) {
 ```
 
 
+```{r}
+# ## Rename df headers
+# head <- data1[1,]
+# colnames(data1) = head
+# data1 <- data1[-1,]
+# 
+# 
+# View(data1)
+# 
+# df <- data1 %>%
+#   select(
+#              #overall stuff
+#              Subject, Group, Block, SessionDate, SessionStartDateTimeUtc,GoCorrect:InitGoRT, PercentStop,PracticeBlock:StopCorr,Trial,BkGd,GoDur,
+#              #distress/ upset sliders
+#              NegDistress.Slider1.Value,NegUpset.Slider1.Value,NeuDistress.Slider1.Value,NeuUpset.Slider1.Value, PosDistress.Slider1.Value,PosUpset.Slider1.Value, 
+#              #other 
+#              CorrectAnswer, EmotionalPic,Go.ACC,Go.DurationError,Go.OnsetTime,Go.RT, Inhs.ACC,
+#              #trauma 1 stuff
+#              Trauma1CogAvoi1.Slider1.Value,Trauma1Deperson1.Slider1.Value,Trauma1Derealiz.Slider1.Value,
+#              Trauma1Dissoc.Slider1.Value, Trauma1CogAvoi1.Slider1.Value,
+#              Trauma1Distress1.Slider1.Value,Trauma1EmotAvoi.Slider1.Value
+#              ) %>%
+#              mutate(
+#                Subject = as.double(Subject),
+#                Group = as.factor(Group),
+#                Block =as.factor(Block),
+#                `Running[Block]` = as.factor(`Running[Block]`),
+#                Trial = factor(Trial),
+#                BkGd = as.factor(BkGd),
+#                Go_Stop_Trial = ifelse(BkGd == "Black", "Go",
+#                                     ifelse(BkGd == "Red", "Stop", NA)
+#                                       ),
+#                GoDur = as.double(GoDur),
+#                #CorrectAnswer = as.double(CorrectAnswer),
+#                Go.ACC = as.double(Go.ACC),
+#                Inhs.ACC = as.double(Inhs.ACC),
+#                Go.RT = as.double(Go.RT),
+#                NegDistress = as.double(NegDistress.Slider1.Value),
+#                NegUpset = as.double(NegUpset.Slider1.Value),
+#                NeuDistress = as.double(NeuDistress.Slider1.Value),
+#                NeuUpset = as.double(NeuUpset.Slider1.Value),
+#                PosDistress = as.double(PosDistress.Slider1.Value),
+#                PosUpset = as.double(PosUpset.Slider1.Value),
+#                CogAvoi = as.double(Trauma1CogAvoi1.Slider1.Value),
+#                Deperson = as.double(Trauma1Deperson1.Slider1.Value),
+#                Derealiz = as.double(Trauma1Derealiz.Slider1.Value),
+#                Dissoc = as.double(Trauma1Dissoc.Slider1.Value), 
+#                CogAvoi = as.double(Trauma1CogAvoi1.Slider1.Value),
+#                Trauma_Distress = as.double(Trauma1Distress1.Slider1.Value),
+#                Emot_Avoid = as.double(Trauma1EmotAvoi.Slider1.Value)
+#                )
+#                
+# view(df)
+# ssrt_df <- df %>%
+#   mutate(
+#     participant = Subject,
+#     block = `Running[Block]`,
+#     block = ifelse(`Running[Block]` == "PracticeBlock", 0,
+#             ifelse(`Running[Block]` == "Block1", 1,
+#             ifelse(`Running[Block]` == "Block2", 2,
+#             ifelse(`Running[Block]` == "Block3", 3,
+#             ifelse(`Running[Block]` == "EmotionTask", 4, NA
+#                    ))))),
+#     ssd = ifelse(is.na(GoDur), 0, GoDur),
+#     condition = ifelse(Go_Stop_Trial == "Go", 0,
+#                 ifelse(Go_Stop_Trial == "Stop", 1,NA
+#                        )),
+#     response = ifelse(Go.ACC == 1 | Inhs.ACC == 1, 1, 0),
+#     response = ifelse(is.na(response), 0, 1
+#                                 ),
+#     trial = Trial,
+#     rt = 
+#       ifelse(
+#       is.na(Go.RT), 0, Go.RT),
+#     block = as.integer(block),
+#     trial = as.integer(trial),
+#     ssd = as.integer(ssd),
+#     condition = as.integer(condition),
+#     response = as.integer(response),
+#     rt = as.integer(rt),
+#     participant = as.integer(participant)
+#         ) 
+# 
+# 
+# summary(df$`Running[Block]`)
+# 
+# block1 <- ssrt_df  %>%
+#   filter(`Running[Block]` == "Block1")
+# block2 <- ssrt_df  %>%
+#   filter(`Running[Block]` == "Block2")
+# block3 <- ssrt_df  %>%
+#   filter(`Running[Block]` == "Block3")
+# combined <- ssrt_df  %>%
+#   filter(`Running[Block]` == "Block2" & `Running[Block]` == "Block3")
+# Emotion <- ssrt_df  %>%
+#   filter(`Running[Block]` == "EmotionTask")
+# 
+# write_csv(data1, "~/Downloads/data1.csv")
+```
+
+## Prepping data for SSRT stuff
+```{r}
+# ds_sst <- ssrt_df |>
+#   select(
+#     'block', 'trial', 'ssd', 'condition', 'response','rt','participant'
+#   ) |>
+#   filter(!is.na(trial))
+# 
+# # Block 1
+# ds_sst_1 <- ds_sst |>
+#   filter(block == 1)
+# 
+# # Block 2
+# ds_sst_2 <- ds_sst |>
+#   filter(block == 2)
+# 
+# # Block 3
+# ds_sst_3 <- ds_sst |>
+#   filter(block == 3)
+# 
+# # Combined
+# ds_sst_com <- ds_sst |>
+#   filter(block == 2 | block == 3)
+# 
+# head(ds_sst_1)
+```
+
+## Scoring the SRT
+```{r}
+# fn_score <- function(ds) { 
+#   # Mean SSD
+#   mean_ssd <- mean(ds[ds$condition == 1, ]$ssd)
+#   # Proportion of failed nogos
+#   p_failed_nogo <- 1 - mean(ds[ds$condition == 1, ]$response)
+#   # Go RTs
+#   go_rts <- ds[
+#     ds$condition == 0 &
+#       ds$rt > 0,
+#     ]$rt
+#   # n-th percentile of Go RTs
+#   rt_quantile <- quantile(go_rts, p_failed_nogo, names = FALSE)
+#   # SSRTi
+#   return(rt_quantile - mean_ssd)
+# }
+```
+
+
+
+```{r}
+# # Participant number
+# participant <- df[1,1]
+# 
+# 
+# ### Block 1 ###
+# # Mean Block 1 GoRT
+# B1_Mean_GoRT = mean(block1$Go.RT, na.rm = TRUE)
+# # Block 1 Go Trials Correct
+# B1_Go_ACC = sum(block1$Go.ACC, na.rm = TRUE)
+# # Block 1 Stop Trials correct
+# B1_Stop_ACC = sum(block1$Inhs.ACC, na.rm = TRUE)
+# # Block 1 SSRT
+# B1_SSRT = fn_score(subset(ds_sst_1, participant == 952))
+# 
+# ### Block 2 ###
+# # Mean Block 2 GoRT
+# B2_Mean_GoRT = mean(block2$Go.RT, na.rm = TRUE)
+# # Block 2 Go Trials Correct
+# B2_Go_ACC = sum(block2$Go.ACC, na.rm = TRUE)
+# # Block 2 Stop Trials correct
+# B2_Stop_ACC = sum(block2$Inhs.ACC, na.rm = TRUE)
+# # Block 2 SSRT
+# B2_SSRT = fn_score(subset(ds_sst_2, participant == 952))
+# 
+# ### Block 3 ###
+# # Mean Block 3 GoRT
+# B3_Mean_GoRT = mean(block3$Go.RT, na.rm = TRUE)
+# # Block 3 Go Trials Correct
+# B3_Go_ACC = sum(block3$Go.ACC, na.rm = TRUE)
+# # Block 3 Stop Trials correct
+# B3_Stop_ACC = sum(block3$Inhs.ACC, na.rm = TRUE)
+# # Block 3 SSRT
+# B3_SSRT = fn_score(subset(ds_sst_3, participant == 952))
+# 
+# ### Combined Stuff
+# # Combined Mean Block 2 + Block 3 GoRT
+# Combined_Mean_GoRT = mean(combined$Go.RT, na.rm = TRUE)
+# # Combined Block 2 + Block 3 Go Trials Correct
+# Combined_Go_ACC = sum(combined$Go.ACC, na.rm = TRUE)
+# # Combined Block 2 + Block 3 Stop trials correct
+# Combined_Stop_ACC = sum(combined$Inhs.ACC, na.rm = TRUE)
+# # Combined Block 2 + Block 3 SSRT
+# Combined_SSRT = fn_score(subset(ds_sst_com, participant == 952))
+# 
+# ### Slider stuff###
+# # Slider Value for RSDI on each image type
+# # Trial 1
+# NegDistress     = Emotion$NegDistress[1]
+# NegUpset        = Emotion$NegUpset[1]
+# 
+# # Trial 2
+# NeuDistress     = Emotion$NeuDistress[2]
+# NeuUpset        = Emotion$NeuUpset[2]
+# 
+# # Trial 3
+# PosDistress     = Emotion$PosDistress[3]
+# PosUpset        = Emotion$PosUpset[3]
+# 
+# #Trial 4
+# Derealiz        = Emotion$Derealiz[4] 
+# Dissoc          = Emotion$Dissoc[4]
+# Emot_Avoid      = Emotion$Emot_Avoid[4] 
+# 
+# # Trial 5
+# CogAvoi         = Emotion$CogAvoi[5]
+# Deperson        = Emotion$Deperson[5] 
+# CogAvoi         = Emotion$CogAvoi[5] 
+# Trauma_Distress = Emotion$Trauma_Distress[5] 
+
+```
+
+
+## combine into one data frame (row)
+```{r}
+# output_data = data.frame(
+#     participant, 
+#     B1_Mean_GoRT, B1_Go_ACC, B1_Stop_ACC,B1_SSRT,
+#     B2_Mean_GoRT, B2_Go_ACC, B2_Stop_ACC,B2_SSRT,
+#     B3_Mean_GoRT, B3_Go_ACC, B3_Stop_ACC,B3_SSRT,
+#     Combined_Mean_GoRT, Combined_Go_ACC, Combined_Stop_ACC,Combined_SSRT,
+#     NegDistress, NegUpset, NeuDistress,NeuUpset, PosDistress, PosUpset, CogAvoi, Deperson, Derealiz, Dissoc, CogAvoi, Trauma_Distress, Emot_Avoid 
+# )
+# 
+# 
+# filename = paste0("~/Downloads/S",part_num,"_SSRT.csv")
+# write.csv(output_data, filename)
+
+
+```
+
+## combine into one data frame (row)
+```{r}
+# output_data = data.frame(
+#     participant, 
+#     B1_Mean_GoRT, B1_Go_ACC, B1_Stop_ACC,B1_SSRT,
+#     B2_Mean_GoRT, B2_Go_ACC, B2_Stop_ACC,B2_SSRT,
+#     B3_Mean_GoRT, B3_Go_ACC, B3_Stop_ACC,B3_SSRT,
+#     Combined_Mean_GoRT, Combined_Go_ACC, Combined_Stop_ACC,Combined_SSRT,
+#     NegDistress, NegUpset, NeuDistress,NeuUpset, PosDistress, PosUpset, CogAvoi, Deperson, Derealiz, Dissoc, CogAvoi, Trauma_Distress, Emot_Avoid 
+# )
+# filename = paste0("~/Downloads/S",part_num,"_SSRT.csv")
+# write.csv(output_data, filename)
+```
+
+
+
+##Drop the first trial
+maybe?
+```{r}
+# ds_tab <- ds_sst_1[-1,]
+# ds_1 <- subset(ds_tab, participant  == 952)
+# table(ds_1$condition)
+```
+
+## Scoring the SRT
+```{r}
+# fn_score <- function(ds) { 
+#   # Mean SSD
+#   mean_ssd <- mean(ds[ds$condition == 1, ]$ssd)
+#   # Proportion of failed nogos
+#   p_failed_nogo <- 1 - mean(ds[ds$condition == 1, ]$response)
+#   # Go RTs
+#   go_rts <- ds[
+#     ds$condition == 0 &
+#       ds$rt > 0,
+#     ]$rt
+#   # n-th percentile of Go RTs
+#   rt_quantile <- quantile(go_rts, p_failed_nogo, names = FALSE)
+#   # SSRTi
+#   return(rt_quantile - mean_ssd)
+# }
+```
+
+Scoring a particiapnt 
+```{r}
+# fn_score(subset(ds_sst_1.2, participant == 952))
+```
+
+Scoring everyone
+```{r}
+# scores <- by(
+#   ds_sst,
+#   ds_sst$participant,
+#   fn_score
+# )
+# SSRT_DF<- data.frame(
+#       participant = names(scores),
+#       score = as.vector(scores)
+# )
+# 
+# SSRT_DF[1:10,]
+```
+
+```{r}
+
+# #1. specify folder with files
+#   files <- list.files(path="~/Desktop/Coding/data/SSRT", pattern="*.csv")
+#   path  = "~/Desktop/Coding/data/SSRT"
+# #2. write a for loop to do the things for the length of files in your folder
+#   for (i in c(1:length(files))){
+# #3. Read in each file as the data
+#   data=read.csv(paste0(path,"/",files[i]))
+```
+
 
 
 
