@@ -17,9 +17,9 @@ library(stringr)
 Read in data
 ```{r}
 #read in files
-data1 <- read_excel("~/Downloads/test1.xlsx") #, col_names = TRUE)
-data2 <- read_excel("~/Downloads/test2.xlsx")#, col_names = TRUE)
-Excel69420 <- read_excel("~/Downloads/69420Excel.xlsx", col_names = TRUE)
+# data1 <- read_excel("~/Downloads/test1.xlsx") #, col_names = TRUE)
+# data2 <- read_excel("~/Downloads/test2.xlsx")#, col_names = TRUE)
+# Excel69420 <- read_excel("~/Downloads/69420Excel.xlsx", col_names = TRUE)
 ```
 
 
@@ -67,6 +67,7 @@ ssrt_please <- function(df){
   return(ssrt_raw)
 }
 
+
 ```
 
 ## KEY
@@ -88,26 +89,17 @@ ssrt_please <- function(df){
 
 # dir.create("~/Downloads/Neutral_Images")
 
-files <- list.files(path = "~/Desktop/Coding/data/SSRT", pattern = "\\.csv$", full.names = TRUE)
+# files <- list.files(path = "~/Desktop/Coding/data/SSRT", pattern = "\\.csv$", full.names = TRUE)
+# length_of_files = length(files)
+
+files <- list.files(path = "~/Downloads/SSRT", pattern = "\\.csv$", full.names = TRUE)
 length_of_files = length(files)
-
-
-
-output = NA
-for(i in 1:length(files)){
-  df <- 
-    
-    
-  output <- append(output, paste(files[i]))
-}
-output <- output[-1]
-output
 ```
 
 
 ```{r}
 #################
-output = NA ## might not need?? 
+# output = NA ## might not need?? 
 
 #2. specify variable names
 df_names = c("Subject", "B1_Mean_GoRT", "B1_Go_ACC", "B1_Stop_ACC",    
@@ -128,13 +120,19 @@ df_output = data.frame(matrix(ncol = length(df_names),nrow = 0))
 #assign variable names to df_output 
 names(df_output) = df_names
 df_output
+
+# length(files)
+# 
+# files[28]
+
 ```
 
 run for loop to extract files.
 ```{r}
 for(i in 1:length(files)){
 ## Read in data  
-  data <- read_csv(files[i])
+
+data <- read_csv(files[i])
   ## Prepping DF for analyses
 #1. Correct the column headers
   head <- data[1,]
@@ -146,7 +144,7 @@ for(i in 1:length(files)){
     select(
              #overall stuff
              Subject, Group, Block, SessionDate, SessionStartDateTimeUtc,GoCorrect:InitGoRT,
-             PercentStop,PracticeBlock:StopCorr,Trial,BkGd,GoDur,
+             PercentStop,StopCorr,Trial,BkGd,GoDur,
              #distress/ upset sliders
              NegDistress.Slider1.Value, NegUpset.Slider1.Value,
              NeuDistress.Slider1.Value, NeuUpset.Slider1.Value,
@@ -185,7 +183,7 @@ for(i in 1:length(files)){
              Subject = as.double(Subject),
              Group = as.factor(Group),
              Block =as.factor(Block),
-             `Running[Block]` = as.factor(`Running[Block]`),
+             # `Running[Block]` = as.factor(`Running[Block]`),
              Trial = factor(Trial),
              BkGd = as.factor(BkGd),
              Go_Stop_Trial = ifelse(BkGd == "Black", "Go",
@@ -224,17 +222,18 @@ for(i in 1:length(files)){
             Reexp_2 = as.double(Trauma1Reexp1.Slider1.Value),
             Trauma_Upset_2 = as.double(Trauma1Upset1.Slider1.Value)
     )
+view(df)
   
 #3. Create new df used for SSRT analyses / wide data
   ssrt_df <- df %>%
       mutate(
         participant = Subject,
-        block = `Running[Block]`,
-        block = ifelse(`Running[Block]` == "PracticeBlock", 0,
-                ifelse(`Running[Block]` == "Block1", 1,
-                ifelse(`Running[Block]` == "Block2", 2,
-                ifelse(`Running[Block]` == "Block3", 3,
-                ifelse(`Running[Block]` == "EmotionTask", 4, NA
+        block = Block,
+        block = ifelse(Block == "1", 0,
+                ifelse(Block == "2", 1,
+                ifelse(Block == "4", 2,
+                ifelse(Block == "6", 3,
+                ifelse(Block == "8", 4, NA
                        ))))),
         ssd = GoDur,
         #go or stop trial 
@@ -266,15 +265,17 @@ for(i in 1:length(files)){
     )
 #4. Assign values of each block to their own df
     block1 <- ssrt_df  %>%
-      filter(`Running[Block]` == "Block1")
+      filter(Block == "2")
     block2 <- ssrt_df  %>%
-      filter(`Running[Block]` == "Block2")
+      filter(Block == "4")
     block3 <- ssrt_df  %>%
-      filter(`Running[Block]` == "Block3")
+      filter(Block == "6")
     combined <- ssrt_df  %>%
-      filter(`Running[Block]` == "Block2" | `Running[Block]` == "Block3")
+      filter(Block == "4" | Block == "6")
     Emotion <- ssrt_df  %>%
-      filter(`Running[Block]` == "EmotionTask")
+      filter(Block == "8")
+    
+ # ssrt_df$block   
 
 ## Prepping data for SSRT stuff
 #1. Create a new df that is in the specific order for the SSRT function
@@ -385,8 +386,6 @@ PosUpset        = Emotion$PosUpset[!is.na(Emotion$PosUpset)]
 # Dissoc          = Emotion$Dissoc[!is.na(Emotion$Dissoc)] 
 # Emot_Avoid      = Emotion$Emot_Avoid[!is.na(Emotion$Emot_Avoid)] 
 
-
-df$EmotAvoi
 #trauma 1
 CogAvoi         = df$CogAvoi[!is.na(df$CogAvoi)]
 Deperson        = df$Deperson[!is.na(df$Deperson)]
@@ -428,117 +427,68 @@ output_data = data.frame(
 )
 
 df_output <- rbind(df_output,output_data)
-} 
+view(df_output)
+}
 
 df_output
 
 write_csv(df_output,"~/Downloads/METRIC_DATA.csv")
 ```
 
-
-```{r}
-REDCap_df<- read_csv("~/Downloads/TDCSAndInhibitoryCon_DATA_2025-01-28_1832.csv")
-
-view(REDCap_df)
-REDCap_par <- REDCap_df %>% 
-  filter(stringr::str_detect(redcap_event_name, c("participant"))) %>% 
-  dplyr::select(
-    #demo info
-    record_id,date,date_v2,demo_age:demo_medication_time,condition_v2,
-    ## tdcs stuff
-    tdcs_brainstim_v2,tdcs_seizure_v2,tdcs_conscious_v2,tdcs_stroke_v2,tdcs_tbi_v2,
-    tdcs_illness_v2, tdcs_injury_v2, tdcs_headaches_v2, tdcs_headaches2_v2,
-    tdcs_headmetal_v2,tdcs_medicaldevice_v2,tdcs_medications_v2,tdcs_medications2_v2,	
-    tdcs_medications3_v2,stablemeds_v2,tdcs_pregnant_v2:tdcs_explain_v2,
-    # TDSCS stuff?
-    head___1:caffeine3,
-    # Measures
-    lec_a_1___1:lec_2_b_8_a,
-    pcl5_1_sc:ptsd_checklist_score_sc,
-    gad7_1:gad7_7,
-    phq9_1:phq9_how_difficult,
-    dss1:dss8,
-    audit_yn:audit_q10,
-    fnd1:fnd7,
-    tbi1___1:tbi4___0, 
-    ehq_1:ehq_4
-  )
-REDCap_par
-
-REDCap_clin <- REDCap_df %>% 
-  filter(stringr::str_detect(redcap_event_name, c("clinicianadministe"))) %>% 
-  select(
-    record_id,
-    cssrs1:cssrs05c,
-    mini_clinician,psycheval,k23elig,mini_dx:mini_notes,
-    condition:why,notes
-  ) 
-
-
-
-comp_REDCap_df <- left_join(REDCap_par, REDCap_clin, join_by(record_id== record_id)) 
-view(comp_REDCap_df)
-
-SCR_df <- read_csv("~/Downloads/ParsedDataset_2025-01-27.csv") 
-
-SCR_df <- SCR_df %>% 
-  pivot_wider(
-    names_from = Picture,
-    values_from = c(HR,SCL)
-        )
-
-METRIC_FINAL <- df_output %>% 
-  mutate(
-    XX_REDCap_DATA_XX = NA
-  ) %>% 
-  left_join(comp_REDCap_df, join_by(Subject == record_id)) %>% 
-  mutate(
-    XX_SCR_DATA_XX = NA
-  ) %>% 
-  left_join(SCR_df, join_by(Subject == Participant)) 
-
-write_sav(METRIC_FINAL,"~/Downloads/METRIC_DATA.sav")
-```
-
-
-
 ```{r,include=FALSE}
-
-
-write_sav(df_output,"~/Downloads/METRIC_DATA.sav")
-
-
-data_ref <- read_csv("~/Desktop/Coding/data/SSRT/metric10.csv")
-view(data_ref)
-
-## Prepping DF for analyses
+# write_sav(df_output,"~/Downloads/METRIC_DATA.sav")
+data <- read_csv(file.choose())
+  ## Prepping DF for analyses
 #1. Correct the column headers
-  head <- data_ref[1,]
-  colnames(data_ref) = head
-  data <- data_ref[-1,]
+  head <- data[1,]
+  colnames(data) = head
+  data <- data[-1,]
   ds_sst <- NA
-#2. select and create the new variables we need and put those into a new df
-  df <- data_ref %>%
+#2. select and create the new variables we need and put those into a new df 
+  df <- data %>%
     select(
              #overall stuff
              Subject, Group, Block, SessionDate, SessionStartDateTimeUtc,GoCorrect:InitGoRT,
-             PercentStop,PracticeBlock:StopCorr,Trial,BkGd,GoDur,
+             PercentStop,StopCorr,Trial,BkGd,GoDur,
              #distress/ upset sliders
-             NegDistress.Slider1.Value,NegUpset.Slider1.Value,NeuDistress.Slider1.Value,NeuUpset.Slider1.Value,
-             PosDistress.Slider1.Value,PosUpset.Slider1.Value,
+             NegDistress.Slider1.Value, NegUpset.Slider1.Value,
+             NeuDistress.Slider1.Value, NeuUpset.Slider1.Value,
+             PosDistress.Slider1.Value, PosUpset.Slider1.Value, 
              #RTstuff
-             CorrectAnswer, EmotionalPic,Go.ACC,Go.DurationError,Go.OnsetTime,Go.RT, Inhs.ACC, Inhs.RT,
-             #trauma 1 stuff
-             Trauma1CogAvoi1.Slider1.Value,Trauma1Deperson1.Slider1.Value,Trauma1Derealiz.Slider1.Value,
-             Trauma1Dissoc.Slider1.Value, Trauma1CogAvoi1.Slider1.Value,
-             Trauma1Distress1.Slider1.Value,Trauma1EmotAvoi.Slider1.Value
+             CorrectAnswer, EmotionalPic,Go.ACC,Go.DurationError,Go.OnsetTime,Go.RT, 
+             Inhs.ACC, Inhs.RT,
+             # trauma 1
+             Trauma1CogAvoi.Slider1.Value, 
+             Trauma1Deperson.Slider1.Value,     
+             Trauma1Derealiz.Slider1.Value, 
+             Trauma1Dissoc.Slider1.Value, 
+             Trauma1Distress.Slider1.Value, 
+             Trauma1EmotAvoi.Slider1.Value,
+             Trauma1Fog.Slider1.Value,
+             Trauma1PhysAvoi.Slider1.Value,
+             Trauma1PhysRx.Slider1.Value,
+             Trauma1Reexp.Slider1.Value,
+             Trauma1Upset.Slider1.Value,
+             #trauma 2
+             Trauma1CogAvoi1.Slider1.Value, 
+             Trauma1Deperson1.Slider1.Value,     
+             Trauma1Derealiz1.Slider1.Value, 
+             Trauma1Dissoc1.Slider1.Value, 
+             Trauma1CogAvoi1.Slider1.Value, 
+             Trauma1Distress1.Slider1.Value, 
+             Trauma1EmotAvoi1.Slider1.Value,
+             Trauma1Fog1.Slider1.Value,
+             Trauma1PhysAvoi1.Slider1.Value,
+             Trauma1PhysRx1.Slider1.Value,
+             Trauma1Reexp1.Slider1.Value,
+             Trauma1Upset1.Slider1.Value,
              ) %>%
-             # Change these varaibles to numbers instead of characters
+             # 
     mutate(
              Subject = as.double(Subject),
              Group = as.factor(Group),
              Block =as.factor(Block),
-             `Running[Block]` = as.factor(`Running[Block]`),
+             # `Running[Block]` = as.factor(`Running[Block]`),
              Trial = factor(Trial),
              BkGd = as.factor(BkGd),
              Go_Stop_Trial = ifelse(BkGd == "Black", "Go",
@@ -554,37 +504,52 @@ view(data_ref)
             NeuUpset = as.double(NeuUpset.Slider1.Value),
             PosDistress = as.double(PosDistress.Slider1.Value),
             PosUpset = as.double(PosUpset.Slider1.Value),
-            CogAvoi = as.double(Trauma1CogAvoi1.Slider1.Value),
-            Deperson = as.double(Trauma1Deperson1.Slider1.Value),
-            Derealiz = as.double(Trauma1Derealiz.Slider1.Value),
+            CogAvoi  = as.double(Trauma1CogAvoi.Slider1.Value),
+            Deperson = as.double(Trauma1Deperson.Slider1.Value),    
+            Derealiz = as.double(Trauma1Deperson.Slider1.Value),
             Dissoc = as.double(Trauma1Dissoc.Slider1.Value),
-            CogAvoi = as.double(Trauma1CogAvoi1.Slider1.Value),
-            Trauma_Distress = as.double(Trauma1Distress1.Slider1.Value),
-            Emot_Avoid = as.double(Trauma1EmotAvoi.Slider1.Value)
-            )
-
+            Trauma_Distress = as.double(Trauma1Distress.Slider1.Value),
+            EmotAvoi = as.double(Trauma1EmotAvoi.Slider1.Value),
+            Fog = as.double(Trauma1Fog.Slider1.Value),
+            PhysAvoi = as.double(Trauma1PhysAvoi.Slider1.Value),
+            PhysRx = as.double(Trauma1PhysRx.Slider1.Value),
+            Reexp = as.double(Trauma1Reexp.Slider1.Value),
+            Trauma_Upset = as.double(Trauma1Upset.Slider1.Value),
+            CogAvoi_2 = as.double(Trauma1CogAvoi1.Slider1.Value),
+            Deperson_2 = as.double(Trauma1Deperson1.Slider1.Value),
+            Derealiz_2 = as.double(Trauma1Derealiz1.Slider1.Value),
+            Dissoc_2 = as.double(Trauma1Dissoc1.Slider1.Value),
+            Trauma_Distress_2 = as.double(Trauma1Distress1.Slider1.Value),
+            EmotAvoi_2 = as.double(Trauma1EmotAvoi1.Slider1.Value),
+            Fog_2 = as.double(Trauma1Fog1.Slider1.Value),
+            PhysAvoi_2 = as.double(Trauma1PhysAvoi1.Slider1.Value),
+            PhysRx_2 = as.double(Trauma1PhysRx1.Slider1.Value),
+            Reexp_2 = as.double(Trauma1Reexp1.Slider1.Value),
+            Trauma_Upset_2 = as.double(Trauma1Upset1.Slider1.Value)
+    )
+  
 #3. Create new df used for SSRT analyses / wide data
   ssrt_df <- df %>%
       mutate(
         participant = Subject,
-        block = `Running[Block]`,
-        block = ifelse(`Running[Block]` == "PracticeBlock", 0,
-                ifelse(`Running[Block]` == "Block1", 1,
-                ifelse(`Running[Block]` == "Block2", 2,
-                ifelse(`Running[Block]` == "Block3", 3,
-                ifelse(`Running[Block]` == "EmotionTask", 4, NA
+        block = Block,
+        block = ifelse(Block == "1", 0,
+                ifelse(Block == "3", 1,
+                ifelse(Block == "5", 2,
+                ifelse(Block == "7", 3,
+                ifelse(Block == "9", 4, NA
                        ))))),
         ssd = GoDur,
-        #go or stop trial
+        #go or stop trial 
         condition = ifelse(Go_Stop_Trial == "Go", 0,
                     ifelse(Go_Stop_Trial == "Stop", 1,NA
                            )),
-        #correct response
+        #correct response 
         response = ifelse(Go.ACC == 1 | Inhs.ACC == 1, 1, 0),
         response = ifelse(is.na(response), 0, response
                                     ),
         trial = Trial,
-        #reaction time
+        #reaction time 
         react_time = ifelse(!is.na(Go.RT), as.double(Go.RT),NA
                      ),
           react_time = ifelse(is.na(react_time),0,react_time),
@@ -594,7 +559,7 @@ view(data_ref)
         condition = as.integer(condition),
         response = as.integer(response),
         participant = as.integer(participant),
-        Failed_stop_time =
+        Failed_stop_time = 
           ifelse(Inhs.ACC == 0, as.double(Inhs.RT), NA
           ),
         Failed_stop_time = as.double(Failed_stop_time)
@@ -602,50 +567,48 @@ view(data_ref)
     filter(
       !is.na(Trial)
     )
-
 #4. Assign values of each block to their own df
     block1 <- ssrt_df  %>%
-      filter(`Running[Block]` == "Block1")
+      filter(Block == "3")
     block2 <- ssrt_df  %>%
-      filter(`Running[Block]` == "Block2")
+      filter(Block == "5")
     block3 <- ssrt_df  %>%
-      filter(`Running[Block]` == "Block3")
+      filter(Block == "7")
     combined <- ssrt_df  %>%
-      filter(`Running[Block]` == "Block2" | `Running[Block]` == "Block3")
+      filter(Block == "5" | Block == "7")
     Emotion <- ssrt_df  %>%
-      filter(`Running[Block]` == "EmotionTask")
+      filter(Block == "9")
+    
+ # ssrt_df$block   
 
 ## Prepping data for SSRT stuff
 #1. Create a new df that is in the specific order for the SSRT function
-ds_sst <- ssrt_df %>%
+ds_sst <- ssrt_df %>% 
   dplyr::select(
     'block', 'trial', 'ssd', 'condition', 'response','react_time','participant'
     ) |>
   filter(!is.na(trial))
 
-# df_ref <- df [1,]
-# ref_ds_sst <- ds_sst[1,]
-
 # Block 1
-ds_sst_1 <- ds_sst %>%
+ds_sst_1 <- ds_sst |>
   filter(block == 1)
 
 # Block 2
-ds_sst_2 <- ds_sst %>%
+ds_sst_2 <- ds_sst |>
   filter(block == 2)
 
 # Block 3
-ds_sst_3 <- ds_sst %>%
+ds_sst_3 <- ds_sst |>
   filter(block == 3)
 
 # Combined
-ds_sst_com <- ds_sst %>%
+ds_sst_com <- ds_sst |>
   filter(block == 2 | block == 3)
 
 ## Pull out the information for the wide
 #1. Participant number
 
-participant <- df[1,1]
+participant<- df[1,1]
 
 #2. Block 1 ---------------
 # Mean Block 1 GoRT
@@ -722,15 +685,29 @@ NeuUpset        = Emotion$NeuUpset[!is.na(Emotion$NeuUpset)]
 PosDistress     = Emotion$PosDistress[!is.na(Emotion$PosDistress)]
 PosUpset        = Emotion$PosUpset[!is.na(Emotion$PosUpset)]
 
-#Trial 4
-# Derealiz        = Emotion$Derealiz[!is.na(Emotion$Derealiz)]
-# Dissoc          = Emotion$Dissoc[!is.na(Emotion$Dissoc)]
-# Emot_Avoid      = Emotion$Emot_Avoid[!is.na(Emotion$Emot_Avoid)]
-# 
-# # Trial 5
-# CogAvoi         = Emotion$CogAvoi[!is.na(Emotion$CogAvoi)]
-# Deperson        = Emotion$Deperson[!is.na(Emotion$Deperson)]
-# Trauma_Distress = Emotion$Trauma_Distress[!is.na(Emotion$Trauma_Distress)]
+#trauma 1
+CogAvoi         = df$CogAvoi[!is.na(df$CogAvoi)]
+Deperson        = df$Deperson[!is.na(df$Deperson)]
+Derealiz        = df$Derealiz[!is.na(df$Derealiz)] 
+Dissoc          = df$Dissoc[!is.na(df$Dissoc)] 
+Trauma_Distress = df$Trauma_Distress[!is.na(df$Trauma_Distress)] 
+EmotAvoi        = df$EmotAvoi[!is.na(df$EmotAvoi)] 
+Fog             = df$Fog[!is.na(df$Fog)]
+PhysAvoi        = df$PhysAvoi[!is.na(df$PhysAvoi)]
+PhysRx          = df$PhysRx[!is.na(df$PhysRx)]
+Reexp           = df$Reexp[!is.na(df$Reexp)]
+Trauma_Upset    = df$Trauma_Upset[!is.na(df$Trauma_Upset)]
+CogAvoi_2       = df$CogAvoi_2[!is.na(df$CogAvoi_2)]
+Deperson_2      = df$Deperson_2[!is.na(df$Deperson_2)]
+Derealiz_2      = df$Derealiz_2[!is.na(df$Derealiz_2)]
+Dissoc_2        = df$Dissoc_2[!is.na(df$Dissoc_2)]
+Trauma_Distress_2 = df$Trauma_Distress_2[!is.na(df$Trauma_Distress_2)]
+EmotAvoi_2      = df$EmotAvoi_2[!is.na(df$EmotAvoi_2)]
+Fog_2           = df$Fog_2[!is.na(df$Fog_2)]
+PhysAvoi_2      = df$PhysAvoi_2[!is.na(df$PhysAvoi_2)]
+PhysRx_2        = df$PhysRx_2[!is.na(df$PhysRx_2)]
+Reexp_2         = df$Reexp_2[!is.na(df$Reexp_2)]
+Trauma_Upset_2  = df$Trauma_Upset_2[!is.na(df$Trauma_Upset_2)]
 
 ## combine into one data frame (row)
 
@@ -739,18 +716,81 @@ output_data = data.frame(
     B1_Mean_GoRT, B1_Go_ACC, B1_Stop_ACC, B1_mean_SSRT, B1_mean_failed_RT, B1_mean_ssd,
     B2_Mean_GoRT, B2_Go_ACC, B2_Stop_ACC,B2_mean_SSRT, B2_mean_failed_RT, B2_mean_ssd,
     B3_Mean_GoRT, B3_Go_ACC, B3_Stop_ACC,B3_mean_SSRT, B3_mean_failed_RT, B3_mean_ssd,
-    Combined_Mean_GoRT, Combined_Go_ACC, Combined_Stop_ACC,Combined_mean_SSRT, Combined_mean_failed_RT, Combined_mean_ssd,
-            NegDistress, NegUpset, NeuDistress, NeuUpset, PosDistress, PosUpset,
-            CogAvoi, Deperson, Derealiz, Dissoc, Trauma_Distress, EmotAvoi,
-            Fog,  PhysAvoi, PhysRx, Reexp, Trauma_Upset,
-            CogAvoi_2, Deperson_2, Derealiz_2, Dissoc_2, Trauma_Distress_2,
-            EmotAvoi_2, Fog_2, PhysAvoi_2, PhysRx_2, Reexp_2,Trauma_Upset_2
-    )
+    Combined_Mean_GoRT, Combined_Go_ACC, Combined_Stop_ACC,Combined_mean_failed_RT,
+    Combined_mean_SSRT, Combined_mean_ssd,
+    NegDistress, NegUpset, NeuDistress, NeuUpset, PosDistress, PosUpset,
+    CogAvoi, Deperson, Derealiz, Dissoc, Trauma_Distress, EmotAvoi,
+    Fog,  PhysAvoi, PhysRx, Reexp, Trauma_Upset,
+    CogAvoi_2, Deperson_2, Derealiz_2, Dissoc_2, Trauma_Distress_2,
+    EmotAvoi_2, Fog_2, PhysAvoi_2, PhysRx_2, Reexp_2,Trauma_Upset_2
+)
+df_output <- rbind(df_output,output_data)
+view(df_output)
 
-
-
-view(df_ref)
+df_output
 ```
+
+```{r}
+REDCap_df<- read_csv("~/Downloads/TDCSAndInhibitoryCon_DATA_2025-01-28_1832.csv")
+
+REDCap_par <- REDCap_df %>% 
+  filter(stringr::str_detect(redcap_event_name, c("participant"))) %>% 
+  dplyr::select(
+    #demo info
+    record_id,date,date_v2,demo_age:demo_medication_time,condition_v2,
+    ## tdcs stuff
+    tdcs_brainstim_v2,tdcs_seizure_v2,tdcs_conscious_v2,tdcs_stroke_v2,tdcs_tbi_v2,
+    tdcs_illness_v2, tdcs_injury_v2, tdcs_headaches_v2, tdcs_headaches2_v2,
+    tdcs_headmetal_v2,tdcs_medicaldevice_v2,tdcs_medications_v2,tdcs_medications2_v2,	
+    tdcs_medications3_v2,stablemeds_v2,tdcs_pregnant_v2:tdcs_explain_v2,
+    # TDSCS stuff?
+    head___1:caffeine3,
+    # Measures
+    lec_a_1___1:lec_2_b_8_a,
+    pcl5_1_sc:ptsd_checklist_score_sc,
+    gad7_1:gad7_7,
+    phq9_1:phq9_how_difficult,
+    dss1:dss8,
+    audit_yn:audit_q10,
+    fnd1:fnd7,
+    tbi1___1:tbi4___0, 
+    ehq_1:ehq_4
+  )
+
+REDCap_clin <- REDCap_df %>% 
+  filter(stringr::str_detect(redcap_event_name, c("clinicianadministe"))) %>% 
+  select(
+    record_id,
+    cssrs1:cssrs05c,
+    mini_clinician,psycheval,k23elig,mini_dx:mini_notes,
+    condition:why,notes
+  ) 
+
+comp_REDCap_df <- left_join(REDCap_par, REDCap_clin, join_by(record_id== record_id)) 
+
+SCR_df <- read_csv("~/Downloads/ParsedDataset_2025-01-27.csv") 
+
+SCR_df <- SCR_df %>% 
+  pivot_wider(
+    names_from = Picture,
+    values_from = c(HR,SCL)
+        )
+
+METRIC_data <- df_output %>% 
+  mutate(
+    XX_REDCap_DATA_XX = NA
+  ) %>% 
+  left_join(comp_REDCap_df, join_by(Subject == record_id)) %>% 
+  mutate(
+    XX_SCR_DATA_XX = NA
+  ) %>% 
+  left_join(SCR_df, join_by(Subject == Participant)) 
+
+write_sav(METRIC_data,"~/Downloads/METRIC_dataset.sav")
+view(METRIC_data)
+
+```
+
 
 ## KEY
 
