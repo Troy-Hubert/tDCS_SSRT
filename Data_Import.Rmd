@@ -26,47 +26,27 @@ Read in data
 ```{r}
 Output_df <- NA
 
-# library(splithalfr)
-fn_score <- function(ds) { 
-  # Mean SSD
-  mean_ssd <- mean(ds[ds$condition == 1, ]$ssd)
-  # Proportion of failed nogos
-  p_failed_nogo <- 1 - mean(ds[ds$condition == 1, ]$response)
-  # Go RTs
-  go_rts <- ds[
-    ds$condition == 0 &
-      ds$rt > 0,
-    ]$rt
-  # n-th percentile of Go RTs
-  rt_quantile <- quantile(go_rts, p_failed_nogo, names = FALSE)
-  # SSRTi
-  return(rt_quantile - mean_ssd)
-}
+df <- block2
 
 ## library(SSRTcalc)
 
-ssrt_please <- function(df){
+SSRT_adapt <- function(df){
   go_trials = df[ which(df$condition == 0),]
   stop_trials <- df[ which(df$condition==1), ]
   stop_count <- sum(stop_trials$response)
   overall_prob = 1 - stop_count/nrow(stop_trials)
   df1 <- go_trials[order(go_trials$react_time, na.last = NA), ]
   the_order <- order(go_trials$react_time, na.last = NA)
-  df1 <- go_trials[order(go_trials$react_time, na.last = NA), ]
-  nrt <- length(ds_sst_2$react_time)
+  nrt <- length(df$react_time)
   nthindex = as.integer(round(nrt*overall_prob))
   meanssd = mean(stop_trials$ssd, na.rm =TRUE)
   nthrt <- df1$react_time[nthindex]
   ssrt_raw <- nthrt - meanssd
   ssrt_raw
-  # if(isTRUE(ssrt_raw <= 0)){
-  #   ssrt = NA
-  # } else {
-  #   ssrt = ssrt_raw
-  # }
   return(ssrt_raw)
 }
 
+view(df1)
 
 ```
 
@@ -121,17 +101,12 @@ df_output = data.frame(matrix(ncol = length(df_names),nrow = 0))
 names(df_output) = df_names
 df_output
 
-# length(files)
-# 
-# files[28]
-
 ```
 
 run for loop to extract files.
 ```{r}
 for(i in 1:length(files)){
 ## Read in data  
-
 data <- read_csv(files[i])
   ## Prepping DF for analyses
 #1. Correct the column headers
@@ -222,10 +197,11 @@ data <- read_csv(files[i])
             Reexp_2 = as.double(Trauma1Reexp1.Slider1.Value),
             Trauma_Upset_2 = as.double(Trauma1Upset1.Slider1.Value)
     )
-view(df)
+  
   
 #3. Create new df used for SSRT analyses / wide data
-  ssrt_df <- df %>%
+
+ssrt_df <- df %>%
       mutate(
         participant = Subject,
         block = Block,
@@ -246,9 +222,16 @@ view(df)
                                     ),
         trial = Trial,
         #reaction time 
-        react_time = ifelse(!is.na(Go.RT), as.double(Go.RT),NA
-                     ),
-          react_time = ifelse(is.na(react_time),0,react_time),
+        react_time = as.double(
+          #block 1
+          ifelse(Block == 2 & BkGd == "Black" & Go.ACC == 0 & (is.na(Go.RT) | Go.RT == 0),
+            max(df$Go.RT[which(df$Block==2)], na.rm = TRUE),
+          #block 1
+          ifelse(Block == 4 & BkGd == "Black" & Go.ACC == 0 & (is.na(Go.RT) | Go.RT == 0),
+            max(df$Go.RT[which(df$Block==4)], na.rm = TRUE),
+          #block 1
+          ifelse(Block == 6 & BkGd == "Black" & Go.ACC == 0 & (is.na(Go.RT) | Go.RT == 0),
+            max(df$Go.RT[which(df$Block==6)], na.rm = TRUE),Go.RT)))),
         block = as.integer(block),
         trial = as.integer(trial),
         ssd = as.double(ssd),
@@ -263,6 +246,55 @@ view(df)
     filter(
       !is.na(Trial)
     )
+
+ssrt_df %>% 
+  group_by(Block, BkGd) %>%
+  filter(BkGd == "Black") %>% 
+  arrange(react_time) %>% 
+  select(Go.ACC, react_time)
+
+## extract number of missed go trials that were replaced.
+  b1_missed_go <- unlist(
+  ssrt_df %>% 
+  filter(
+    Block == 2,
+    BkGd == "Black"
+  ) %>% 
+  select(
+    Go.ACC
+  ) %>% 
+  summarise(block1_missed = length(Go.ACC)- sum(Go.ACC))
+)
+
+b2_missed_go <- unlist(ssrt_df %>% 
+  filter(
+    Block == 4,
+    BkGd == "Black"
+  ) %>% 
+  select(
+    Go.ACC
+  ) %>% 
+  summarise(block2_missed = length(Go.ACC)- sum(Go.ACC))
+)
+
+b3_missed_go <- unlist(ssrt_df %>% 
+  filter(
+    Block == 6,
+    BkGd == "Black"
+  ) %>% 
+  select(
+    Go.ACC
+  ) %>% 
+  summarise(block3_missed = length(Go.ACC)- sum(Go.ACC))
+)
+
+ssrt_df <- ssrt_df %>% 
+  mutate(
+    b1_missed_go = b1_missed_go,
+    b2_missed_go = b2_missed_go,
+    b3_missed_go = b3_missed_go
+  )
+  
 #4. Assign values of each block to their own df
     block1 <- ssrt_df  %>%
       filter(Block == "2")
@@ -274,8 +306,7 @@ view(df)
       filter(Block == "4" | Block == "6")
     Emotion <- ssrt_df  %>%
       filter(Block == "8")
-    
- # ssrt_df$block   
+ # ssrt_df$block
 
 ## Prepping data for SSRT stuff
 #1. Create a new df that is in the specific order for the SSRT function
@@ -307,8 +338,11 @@ ds_sst_com <- ds_sst |>
 participant<- df[1,1]
 
 #2. Block 1 ---------------
+
 # Mean Block 1 GoRT
-B1_Mean_GoRT = mean(block1$Go.RT, na.rm = TRUE)
+B1_Mean_GoRT = mean(block1$react_time, na.rm = TRUE)
+ # block 1 mean ssd
+B1_mean_ssd = mean(block1$ssd,na.rm = TRUE)
 # Block 1 Go Trials Correct
 B1_Go_ACC = sum(block1$Go.ACC, na.rm = TRUE)
 # Block 1 Stop Trials correct
@@ -317,14 +351,13 @@ B1_Stop_ACC = sum(block1$Inhs.ACC, na.rm = TRUE)
 B1_mean_SSRT = B1_Mean_GoRT - mean(block1$ssd, na.rm = TRUE)
 #   Block 1 Failed Mean Stop RT
 B1_mean_failed_RT = mean(block1$Failed_stop_time,na.rm = TRUE)
- # block 1 mean ssd
-B1_mean_ssd = mean(block1$ssd,na.rm = TRUE)
 # SSRT Please
-B1_SSRT = ssrt_please(ds_sst_1)
+B1_SSRT_adapt = SSRT_adapt(ds_sst_1)
 
 #3. Block 2 ---------------
+
 # Mean Block 2 GoRT
-B2_Mean_GoRT = mean(block2$Go.RT, na.rm = TRUE)
+B2_Mean_GoRT = mean(block2$react_time, na.rm = TRUE)
 # Block 2 Go Trials Correct
 B2_Go_ACC = sum(block2$Go.ACC, na.rm = TRUE)
 # Block 2 Stop Trials correct
@@ -336,11 +369,11 @@ B2_mean_failed_RT = mean(block2$Failed_stop_time,na.rm = TRUE)
  # block 2 mean ssd
 B2_mean_ssd = mean(block2$ssd,na.rm = TRUE)
 # SSRT Please
-B1_SSRT = ssrt_please(ds_sst_1)
+B2_SSRT_adapt = SSRT_adapt(ds_sst_2)
 
 #4. Block 3 -----------------
 # Mean Block 3 GoRT
-B3_Mean_GoRT = mean(block3$Go.RT, na.rm = TRUE)
+B3_Mean_GoRT = mean(block3$react_time, na.rm = TRUE)
 # Block 3 Go Trials Correct
 B3_Go_ACC = sum(block3$Go.ACC, na.rm = TRUE)
 # Block 3 Stop Trials correct
@@ -351,10 +384,12 @@ B3_mean_SSRT = B3_Mean_GoRT - mean(block3$ssd, na.rm = TRUE)
 B3_mean_failed_RT = mean(block3$Failed_stop_time,na.rm = TRUE)
  # block 3 mean ssd
 B3_mean_ssd = mean(block3$ssd,na.rm = TRUE)
+# B3_SSRT
+B3_SSRT_adapt = SSRT_adapt(ds_sst_3)
 
 #5. Combined Stuff ----------------
 # Combined Mean Block 2 + Block 3 GoRT
-Combined_Mean_GoRT = mean(combined$Go.RT, na.rm = TRUE)
+Combined_Mean_GoRT = mean(combined$react_time, na.rm = TRUE)
 # Combined Block 2 + Block 3 Go Trials Correct
 Combined_Go_ACC = sum(combined$Go.ACC, na.rm = TRUE)
 # Combined Block 2 + Block 3 Stop trials correct
@@ -365,7 +400,8 @@ Combined_mean_SSRT = Combined_Mean_GoRT - mean(combined$ssd, na.rm = TRUE)
 Combined_mean_failed_RT =mean(combined$Failed_stop_time,na.rm = TRUE)
  # combined mean ssd
 Combined_mean_ssd = mean(combined$ssd,na.rm = TRUE)
-
+# combined_SSRT
+Combined_SSRT_adapt = SSRT_adapt(combined)
 
 #6. Slider stuff ------------------
 # Slider Value for RSDI on each image type
@@ -414,11 +450,14 @@ Trauma_Upset_2  = df$Trauma_Upset_2[!is.na(df$Trauma_Upset_2)]
 
 output_data = data.frame(
     participant,
-    B1_Mean_GoRT, B1_Go_ACC, B1_Stop_ACC, B1_mean_SSRT, B1_mean_failed_RT, B1_mean_ssd,
-    B2_Mean_GoRT, B2_Go_ACC, B2_Stop_ACC,B2_mean_SSRT, B2_mean_failed_RT, B2_mean_ssd,
-    B3_Mean_GoRT, B3_Go_ACC, B3_Stop_ACC,B3_mean_SSRT, B3_mean_failed_RT, B3_mean_ssd,
-    Combined_Mean_GoRT, Combined_Go_ACC, Combined_Stop_ACC,Combined_mean_failed_RT,
-    Combined_mean_SSRT, Combined_mean_ssd,
+    B1_Mean_GoRT, B1_mean_ssd, B1_mean_SSRT, B1_SSRT_adapt, 
+    B1_Go_ACC, B1_Stop_ACC, B1_mean_failed_RT, 
+    B2_Mean_GoRT, B2_mean_ssd, B2_mean_SSRT, B2_SSRT_adapt,
+    B2_Go_ACC, B2_Stop_ACC, B2_mean_failed_RT,
+    B3_Mean_GoRT, B3_mean_ssd, B3_mean_SSRT, B3_SSRT_adapt, 
+    B3_Go_ACC, B3_Stop_ACC, B3_mean_failed_RT,
+    Combined_Mean_GoRT, Combined_mean_ssd, Combined_mean_SSRT, Combined_SSRT_adapt,     
+    Combined_Go_ACC, Combined_Stop_ACC, Combined_mean_failed_RT,
     NegDistress, NegUpset, NeuDistress, NeuUpset, PosDistress, PosUpset,
     CogAvoi, Deperson, Derealiz, Dissoc, Trauma_Distress, EmotAvoi,
     Fog,  PhysAvoi, PhysRx, Reexp, Trauma_Upset,
@@ -437,7 +476,7 @@ write_csv(df_output,"~/Downloads/METRIC_DATA.csv")
 
 ```{r,include=FALSE}
 # write_sav(df_output,"~/Downloads/METRIC_DATA.sav")
-data <- read_csv(file.choose())
+data <- read_csv("~/Downloads/SST_Task-43-1.csv")
   ## Prepping DF for analyses
 #1. Correct the column headers
   head <- data[1,]
@@ -550,9 +589,16 @@ data <- read_csv(file.choose())
                                     ),
         trial = Trial,
         #reaction time 
-        react_time = ifelse(!is.na(Go.RT), as.double(Go.RT),NA
-                     ),
-          react_time = ifelse(is.na(react_time),0,react_time),
+        react_time = as.double(
+          #block 1
+          ifelse(Block == 3 & BkGd == "Black" & Go.ACC == 0 & (is.na(Go.RT) | Go.RT == 0),
+            max(df$Go.RT[which(df$Block==3)], na.rm = TRUE),
+          #block 1
+          ifelse(Block == 5 & BkGd == "Black" & Go.ACC == 0 & (is.na(Go.RT) | Go.RT == 0),
+            max(df$Go.RT[which(df$Block==5)], na.rm = TRUE),
+          #block 1
+          ifelse(Block == 7 & BkGd == "Black" & Go.ACC == 0 & (is.na(Go.RT) | Go.RT == 0),
+            max(df$Go.RT[which(df$Block==7)], na.rm = TRUE),Go.RT)))),
         block = as.integer(block),
         trial = as.integer(trial),
         ssd = as.double(ssd),
@@ -562,11 +608,56 @@ data <- read_csv(file.choose())
         Failed_stop_time = 
           ifelse(Inhs.ACC == 0, as.double(Inhs.RT), NA
           ),
-        Failed_stop_time = as.double(Failed_stop_time)
+        Failed_stop_time = as.double(Failed_stop_time), 
+        num_missed_gos = ifelse(
+          Block == 3, sum(df$Go.ACC[which(df$BkGd == "Black")]), -999999
+        )
         ) |>
     filter(
       !is.na(Trial)
     )
+
+b1_missed_go <- unlist(
+  ssrt_df %>% 
+  filter(
+    Block == 3,
+    BkGd == "Black"
+  ) %>% 
+  select(
+    Go.ACC
+  ) %>% 
+  summarise(block1_missed = length(Go.ACC)- sum(Go.ACC))
+)
+
+b2_missed_go <- unlist(ssrt_df %>% 
+  filter(
+    Block == 5,
+    BkGd == "Black"
+  ) %>% 
+  select(
+    Go.ACC
+  ) %>% 
+  summarise(block2_missed = length(Go.ACC)- sum(Go.ACC))
+)
+
+b3_missed_go <- unlist(ssrt_df %>% 
+  filter(
+    Block == 7,
+    BkGd == "Black"
+  ) %>% 
+  select(
+    Go.ACC
+  ) %>% 
+  summarise(block3_missed = length(Go.ACC)- sum(Go.ACC))
+)
+
+ssrt_df <- ssrt_df %>% 
+  mutate(
+    b1_missed_go = b1_missed_go,
+    b2_missed_go = b2_missed_go,
+    b3_missed_go = b3_missed_go
+  )
+
 #4. Assign values of each block to their own df
     block1 <- ssrt_df  %>%
       filter(Block == "3")
@@ -611,8 +702,9 @@ ds_sst_com <- ds_sst |>
 participant<- df[1,1]
 
 #2. Block 1 ---------------
+
 # Mean Block 1 GoRT
-B1_Mean_GoRT = mean(block1$Go.RT, na.rm = TRUE)
+B1_Mean_GoRT = mean(block1$react_time, na.rm = TRUE)
 # Block 1 Go Trials Correct
 B1_Go_ACC = sum(block1$Go.ACC, na.rm = TRUE)
 # Block 1 Stop Trials correct
@@ -624,11 +716,11 @@ B1_mean_failed_RT = mean(block1$Failed_stop_time,na.rm = TRUE)
  # block 1 mean ssd
 B1_mean_ssd = mean(block1$ssd,na.rm = TRUE)
 # SSRT Please
-B1_SSRT = ssrt_please(ds_sst_1)
+B1_SSRT_adapt = SSRT_adapt(ds_sst_1)
 
 #3. Block 2 ---------------
 # Mean Block 2 GoRT
-B2_Mean_GoRT = mean(block2$Go.RT, na.rm = TRUE)
+B2_Mean_GoRT = mean(block2$react_time, na.rm = TRUE)
 # Block 2 Go Trials Correct
 B2_Go_ACC = sum(block2$Go.ACC, na.rm = TRUE)
 # Block 2 Stop Trials correct
@@ -640,11 +732,11 @@ B2_mean_failed_RT = mean(block2$Failed_stop_time,na.rm = TRUE)
  # block 2 mean ssd
 B2_mean_ssd = mean(block2$ssd,na.rm = TRUE)
 # SSRT Please
-B1_SSRT = ssrt_please(ds_sst_1)
+B2_SSRT_adapt = SSRT_adapt(ds_sst_2)
 
 #4. Block 3 -----------------
 # Mean Block 3 GoRT
-B3_Mean_GoRT = mean(block3$Go.RT, na.rm = TRUE)
+B3_Mean_GoRT = mean(block3$react_time, na.rm = TRUE)
 # Block 3 Go Trials Correct
 B3_Go_ACC = sum(block3$Go.ACC, na.rm = TRUE)
 # Block 3 Stop Trials correct
@@ -655,10 +747,12 @@ B3_mean_SSRT = B3_Mean_GoRT - mean(block3$ssd, na.rm = TRUE)
 B3_mean_failed_RT = mean(block3$Failed_stop_time,na.rm = TRUE)
  # block 3 mean ssd
 B3_mean_ssd = mean(block3$ssd,na.rm = TRUE)
+# B3_SSRT
+B3_SSRT_adapt = SSRT_adapt(ds_sst_3)
 
 #5. Combined Stuff ----------------
 # Combined Mean Block 2 + Block 3 GoRT
-Combined_Mean_GoRT = mean(combined$Go.RT, na.rm = TRUE)
+Combined_Mean_GoRT = mean(combined$react_time, na.rm = TRUE)
 # Combined Block 2 + Block 3 Go Trials Correct
 Combined_Go_ACC = sum(combined$Go.ACC, na.rm = TRUE)
 # Combined Block 2 + Block 3 Stop trials correct
@@ -669,7 +763,8 @@ Combined_mean_SSRT = Combined_Mean_GoRT - mean(combined$ssd, na.rm = TRUE)
 Combined_mean_failed_RT =mean(combined$Failed_stop_time,na.rm = TRUE)
  # combined mean ssd
 Combined_mean_ssd = mean(combined$ssd,na.rm = TRUE)
-
+# combined_SSRT
+Combined_SSRT_adapt = SSRT_adapt(combined)
 
 #6. Slider stuff ------------------
 # Slider Value for RSDI on each image type
@@ -684,6 +779,11 @@ NeuUpset        = Emotion$NeuUpset[!is.na(Emotion$NeuUpset)]
 # Trial 3
 PosDistress     = Emotion$PosDistress[!is.na(Emotion$PosDistress)]
 PosUpset        = Emotion$PosUpset[!is.na(Emotion$PosUpset)]
+
+# #Trauma 1
+# Derealiz        = Emotion$Derealiz[!is.na(Emotion$Derealiz)] 
+# Dissoc          = Emotion$Dissoc[!is.na(Emotion$Dissoc)] 
+# Emot_Avoid      = Emotion$Emot_Avoid[!is.na(Emotion$Emot_Avoid)] 
 
 #trauma 1
 CogAvoi         = df$CogAvoi[!is.na(df$CogAvoi)]
@@ -713,17 +813,21 @@ Trauma_Upset_2  = df$Trauma_Upset_2[!is.na(df$Trauma_Upset_2)]
 
 output_data = data.frame(
     participant,
-    B1_Mean_GoRT, B1_Go_ACC, B1_Stop_ACC, B1_mean_SSRT, B1_mean_failed_RT, B1_mean_ssd,
-    B2_Mean_GoRT, B2_Go_ACC, B2_Stop_ACC,B2_mean_SSRT, B2_mean_failed_RT, B2_mean_ssd,
-    B3_Mean_GoRT, B3_Go_ACC, B3_Stop_ACC,B3_mean_SSRT, B3_mean_failed_RT, B3_mean_ssd,
-    Combined_Mean_GoRT, Combined_Go_ACC, Combined_Stop_ACC,Combined_mean_failed_RT,
-    Combined_mean_SSRT, Combined_mean_ssd,
+    B1_Mean_GoRT, B1_mean_ssd, B1_mean_SSRT, B1_SSRT_adapt, 
+    B1_Go_ACC, B1_Stop_ACC, B1_mean_failed_RT, 
+    B2_Mean_GoRT, B2_mean_ssd, B2_mean_SSRT, B2_SSRT_adapt, 
+    B2_Go_ACC, B2_Stop_ACC, B2_mean_failed_RT,
+    B3_Mean_GoRT, B3_mean_ssd, B3_mean_SSRT, B3_SSRT_adapt,
+    B3_Go_ACC, B3_Stop_ACC, B3_mean_failed_RT,
+    Combined_Mean_GoRT, Combined_mean_ssd, Combined_mean_SSRT, Combined_SSRT_adapt,     
+    Combined_Go_ACC, Combined_Stop_ACC, Combined_mean_failed_RT,
     NegDistress, NegUpset, NeuDistress, NeuUpset, PosDistress, PosUpset,
     CogAvoi, Deperson, Derealiz, Dissoc, Trauma_Distress, EmotAvoi,
     Fog,  PhysAvoi, PhysRx, Reexp, Trauma_Upset,
     CogAvoi_2, Deperson_2, Derealiz_2, Dissoc_2, Trauma_Distress_2,
     EmotAvoi_2, Fog_2, PhysAvoi_2, PhysRx_2, Reexp_2,Trauma_Upset_2
 )
+
 df_output <- rbind(df_output,output_data)
 view(df_output)
 
@@ -731,7 +835,7 @@ df_output
 ```
 
 ```{r}
-REDCap_df<- read_csv("~/Downloads/TDCSAndInhibitoryCon_DATA_2025-01-28_1832.csv")
+REDCap_df<- read_csv("~/Downloads/TDCSAndInhibitoryCon_DATA_2025-01-31_0950.csv")
 
 REDCap_par <- REDCap_df %>% 
   filter(stringr::str_detect(redcap_event_name, c("participant"))) %>% 
@@ -786,9 +890,31 @@ METRIC_data <- df_output %>%
   ) %>% 
   left_join(SCR_df, join_by(Subject == Participant)) 
 
-write_sav(METRIC_data,"~/Downloads/METRIC_dataset.sav")
+write_sav(METRIC_data,"~/Downloads/METRIC_FINAL.sav")
 view(METRIC_data)
 
+```
+
+
+```{r}
+library(ggtext)
+
+METRIC_data %>% 
+  ggplot() +
+  geom_density(aes(x = B1_mean_ssd),fill= "#eb372a", alpha= .5, data = subset(METRIC_data, B1_mean_ssd > 0))+
+  geom_density(aes(x = B1_Mean_GoRT),fill= "#1a60ed", alpha= .5)+
+  geom_density(aes(x = B1_mean_SSRT), fill = "#2fbd42", alpha = .5) +
+  theme_minimal()+
+  labs(
+    title = "Mean <span style='color:#eb372a'>SSD</span> and <span style='color:#1a60ed'>GoRT</span> and <span style='color:#2fbd42'>SSRT</span> during block 1.",
+    subtitle = "Adding the max value to the GoRT worked. These values all look normalish!",
+    x = "MS",
+    y = "Density"
+  ) +
+  theme(
+    plot.title = element_markdown(hjust = 0.5, size = 17),
+    plot.subtitle = element_text(hjust = 0.5, size = 12)
+  )
 ```
 
 
@@ -832,5 +958,4 @@ Block 2 = 78 Go, 26 Stop
 - Slider Values for neutral image = NeuDistress.Slider1.Value, NeuUpsetSlider1.Value
 - Slider Values for positive image = PosDistress.Slider1.Value, PosUpsetSlider1.Value
 - Slider Values for trauma images = every slider value that begins with "Trauma1" or "Trauma2". There should be 11 sliders for each trauma picture
-
 
